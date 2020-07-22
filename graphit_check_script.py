@@ -1,4 +1,6 @@
 import requests
+import argparse
+import sys
 
 
 class State:
@@ -17,7 +19,7 @@ class State:
         return self.__state[self.get_state()]
     
     def update_state_code(self, code):
-        if code in [0, 1, 2, 3]:
+        if code in self.__state:
             self.__state_code = code
         else:
             self.__state_code = 3
@@ -28,19 +30,35 @@ class State:
             elif (value < high):
                 self.update_state_code(1)
             else:
-                self.update_state_code(2)    
+                self.update_state_code(2)
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Graphite', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--low', default=input('Enter Thereshhold value: '), help='Specify a Thereshhold value. ', type=int)
+    parser.add_argument('--high', help='Specify a Critical Thereshhold value ', type=int)
+    return parser.parse_args()
 
 def main():
     try:
         url = "https://play.grafana.org/api/datasources/proxy/1/render?target=aliasByNode(movingAverage(scaleToSeconds(apps.fakesite.*.counters.requests.count,%201),%202),%202)&format=json&from=-5min"
         r = requests.get(url=url)
         datapoints = r.json()[0]['datapoints']
-    except:
-        print('Unkown')
+    except Exception as e:
+        print(e)
         sys.exit()
         
-    low = int(input('Enter Thereshhold Value: '))
-    high = int(input('Enter Critical Thereshhold Value: '))
+    args = parse_args()
+
+    if(args.low):
+        low = args.low
+    else:
+        low = int(input('Enter Thereshhold Value: '))
+    
+    if(args.high):
+        high = args.high
+    else:
+   		high = int(input('Enter Critical Thereshhold Value: '))
+    
     for d in datapoints:
         state = State()
         try:
